@@ -1,0 +1,93 @@
+/* TODO: 
+1. infoinput: 인풋박스 끝에 수량/ETH 추가
+2. deploybtn: 버튼 가운데위치 계산 
+*/
+
+.generalcell {
+  width: 680px;
+  height: 1005px;
+  padding: 48px 20px 20px 20px;
+
+  position: absolute;
+  top: 52px;
+  left: 260px;
+  background-color: gray;
+}
+
+.guidecell {
+  padding: 20px;
+
+  width: 640px;
+  height: 120px;
+  left: calc(50% - 680px / 2 - 250px);
+  top: 195px;
+
+  background-color: white;
+}
+
+.tokenset {
+  padding: 10px;
+
+  margin-top: 20px;
+  margin-bottom: 20px;
+  width: 660px;
+  height: 270px;
+  left: calc(50% - 680px / 2 - 250px);
+  background-color: white;
+}
+
+.burntoken {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 10px;
+
+  margin-top: 10px;
+  width: 660px;
+  height: 240px;
+  left: calc(50% - 680px / 2 - 250px);
+  background-color: white;
+}
+
+.infoinput {
+  padding: 5px;
+
+  color: #2c303d;
+  border: none;
+  border-bottom: 1px solid black;
+  width: 300px;
+  height: 25px;
+}
+
+.infoinput:focus {
+  outline: none;
+}
+.infoinput::placeholder {
+  color: #eaeaed;
+}
+
+.deployplatform {
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 20px 30px;
+
+  position: absolute;
+  width: 360px;
+  height: 360px;
+  right: 130px;
+  left: 990px;
+  top: 195px;
+
+  background-color: white;
+}
+
+.deploybtn {
+  width: 250px;
+  height: 50px;
+  border-radius: 75px;
+  border: 0;
+
+  position: absolute;
+  top: 320px;
+  left: 90px;
+}

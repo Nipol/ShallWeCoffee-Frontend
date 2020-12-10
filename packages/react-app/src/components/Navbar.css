@@ -1,0 +1,30 @@
+.navera {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0px 20px;
+
+  position: absolute;
+  height: 52px;
+  left: 0px;
+  right: 0px;
+  z-index: 10;
+  background: white;
+}
+.generalbtn {
+  float: right;
+  border: none;
+  height: 35px;
+  width: 100px;
+  border-radius: 75px;
+  margin: 5px;
+  align-items: center;
+}
+.connectbutton {
+  background-color: #212736;
+  color: white;
+}
+
+.editprof {
+  background-color: none;
+}

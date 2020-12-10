@@ -1,0 +1,75 @@
+.leftsection {
+  width: 680px;
+  height: 1005px;
+  padding: 48px 20px 20px 20px;
+
+  position: absolute;
+  top: 52px;
+  left: 260px;
+  background-color: gray;
+}
+
+.profsection {
+  display: flex;
+  align-items: flex-start;
+  padding: 20px;
+
+  width: 640px;
+  height: 154px;
+  left: calc(50% - 680px / 2 - 250px);
+  top: 195px;
+
+  background-color: white;
+}
+
+.profsection .profpic {
+  position: absolute;
+  width: 110px;
+  height: 110px;
+  border-radius: 75px;
+  background-color: yellow;
+}
+
+.profsection .personalinfo {
+  position: absolute;
+  left: 150px;
+
+  height: 154px;
+  width: 500px;
+  margin-left: 20px;
+  background-color: yellow;
+}
+
+.choicecell {
+  display: flex;
+  align-items: flex-start;
+  padding: 0px;
+
+  margin-top: 20px;
+  margin-bottom: 10px;
+  width: 680px;
+  height: 40px;
+  left: calc(50% - 680px / 2 - 250px);
+  background-color: white;
+}
+
+.choicecell .genbtn {
+  height: 40px;
+  width: 100px;
+  margin-right: 5px;
+  align-items: center;
+  border: 0;
+}
+
+.intro {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0px;
+
+  margin-top: 10px;
+  width: 680px;
+  height: 738px;
+  left: calc(50% - 680px / 2 - 250px);
+  background-color: white;
+}
