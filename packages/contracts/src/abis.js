@@ -1,9 +1,11 @@
-import erc20Abi from "./abis/erc20.json";
-import ownableAbi from "./abis/ownable.json";
-import tokenFactoryABI from "./abis/tokenfactory.json";
+import ensPublicResolver from "./abis/ens-public-resolver.json";
+import manager from "./abis/manager.json";
+import managerFactory from "./abis/manager-factory.json";
 
 const abis = {
-  tokenfactory: tokenFactoryABI
+  ENS_PUBLIC_RESOLVER_ABI: ensPublicResolver,
+  MANAGER_ABI: manager,
+  MANAGER_FACTORY_ABI: managerFactory
 };
 
 export default abis;
