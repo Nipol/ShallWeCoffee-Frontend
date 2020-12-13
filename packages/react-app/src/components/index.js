@@ -1,19 +1,19 @@
 import styled from "styled-components";
 
 export const Header = styled.header`
-  background-color: #282c34;
+  background-color: #fcfcfc;
   min-height: 70px;
   display: flex;
   flex-direction: row;
   align-items: center;
   justify-content: flex-end;
-  color: white;
+  color: 2C303D;
 `;
 
 export const Body = styled.body`
   align-items: center;
-  background-color: #282c34;
-  color: white;
+  background-color: #fcfcfc;
+  color: #2C303D;
   display: flex;
   flex-direction: column;
   font-size: calc(10px + 2vmin);
@@ -36,12 +36,17 @@ export const Link = styled.a.attrs({
 `;
 
 export const Button = styled.button`
-  background-color: white;
+  background-color: #212736;
   border: none;
   border-radius: 8px;
-  color: #282c34;
+  color: white;
   cursor: pointer;
-  font-size: 16px;
+  font-size: 14px;
+  font-style: normal;
+  font-weight: bold;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  line-height: 20px;
   text-align: center;
   text-decoration: none;
   margin: 0px 20px;

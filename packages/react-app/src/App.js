@@ -1,30 +1,31 @@
 import React from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Contract } from "@ethersproject/contracts";
-import { getDefaultProvider } from "@ethersproject/providers";
-import { useQuery } from "@apollo/react-hooks";
+import { Link, Route } from "react-router-dom";
+import Home from "./Home";
+import Sample from "./Sample";
+// import { getDefaultProvider } from "@ethersproject/providers";
+// import { ethers } from "ethers";
 
-import { Body, Button, Header, Image, Link } from "./components";
-import logo from "./ethereumLogo.png";
+import { Body, Button, Header } from "./components";
 import useWeb3Modal from "./hooks/useWeb3Modal";
-
 import { addresses, abis } from "@project/contracts";
-import GET_TRANSFERS from "./graphql/subgraph";
 
-async function readOnChainData() {
-  // Should replace with the end-user wallet, e.g. Metamask
-  const defaultProvider = getDefaultProvider();
-  // Create an instance of an ethers.js Contract
-  // Read more about ethers.js on https://docs.ethers.io/v5/api/contract/contract/
-  const ceaErc20 = new Contract(addresses.ceaErc20, abis.erc20, defaultProvider);
-  // A pre-defined address that owns some CEAERC20 tokens
-  const tokenBalance = await ceaErc20.balanceOf("0x3f8CB69d9c0ED01923F11c829BaE4D9a4CB6c82C");
-  console.log({ tokenBalance: tokenBalance.toString() });
+function BalanceCheck({ provider }) {
+  const fakeDai = new Contract(addresses.FAKE_DAI, abis.ERC20, provider);
+  return (
+    <Button onClick={async () => {
+      const daiBalance = await fakeDai.balanceOf("0xe9ef34F9ea6024019DE42C1B8ca6FE7507066762");
+      console.log({ tokenBalance: daiBalance.toString() });
+    }}>Check Balance</Button>
+  );
 }
 
+//@TODO: Disconnect Wallet에서 주소 나타나야 함.
 function WalletButton({ provider, loadWeb3Modal, logoutOfWeb3Modal }) {
   return (
     <Button
-      onClick={() => {
+      onClick={async () => {
         if (!provider) {
           loadWeb3Modal();
         } else {
@@ -32,42 +33,70 @@ function WalletButton({ provider, loadWeb3Modal, logoutOfWeb3Modal }) {
         }
       }}
     >
-      {!provider ? "Connect Wallet" : "Disconnect Wallet"}
+      {!provider ? "Connect Wallet" : "Disconnect Wallet" }
     </Button>
   );
 }
 
+function Addr({provider}) {
+  const [addr, setAddr] = useState('');
+
+  const getAddress = useCallback(async () => {
+    setTimeout(async () => {
+      if(typeof(provider) !== 'undefined') {
+        const signer = provider.getSigner();
+        const addr = await signer.getAddress();
+        setAddr(addr);
+      }
+    }, 500);
+  },[provider]);
+
+  useEffect(() => {
+    if (!addr) {
+      getAddress();
+    }
+  }, [addr, getAddress]);
+  
+  return (
+    <>
+      {addr || ""}
+    </>
+  );
+}
+
 function App() {
-  const { loading, error, data } = useQuery(GET_TRANSFERS);
   const [provider, loadWeb3Modal, logoutOfWeb3Modal] = useWeb3Modal();
 
-  React.useEffect(() => {
-    if (!loading && !error && data && data.transfers) {
-      console.log({ transfers: data.transfers });
-    }
-  }, [loading, error, data]);
-
   return (
-    <div>
+    <>
       <Header>
         <WalletButton provider={provider} loadWeb3Modal={loadWeb3Modal} logoutOfWeb3Modal={logoutOfWeb3Modal} />
       </Header>
+      <Link to="/">Home</Link>
+      <Link to="/sample">    Sample</Link>
+      <Route path="/" component={Home} exact={true}></Route>
+      <Route path="/sample" component={Sample}></Route>
+
+      {/* 
+        / <- root path
+        /0x[manager hash] <- 매니저 path
+          wallet 연결된 사람이, manager에서 조회 했을 때 Owner다.
+            요청된 약속, 및 진행중인 약속 탭이 보인다.
+          wallet 연결된 사람이, mamger에서 조회 했을 때 오너가 아니라면,
+            요청한 약속
+
+          0x[manager hash]/profile -> 프로필 보여주는 거
+          0x[manager hash]/requested -> 요청한 약속 보여주는 거
+       */}
+
+      {/* <Header>
+        <WalletButton provider={provider} loadWeb3Modal={loadWeb3Modal} logoutOfWeb3Modal={logoutOfWeb3Modal} />
+      </Header>
       <Body>
-        <Image src={logo} alt="react-logo" />
-        <p>
-          Edit <code>packages/react-app/src/App.js</code> and save to reload.
-        </p>
-        {/* Remove the "hidden" prop and open the JavaScript console in the browser to see what this function does */}
-        <Button hidden onClick={() => readOnChainData()}>
-          Read On-Chain Balance
-        </Button>
-        <Link href="https://ethereum.org/developers/#getting-started" style={{ marginTop: "8px" }}>
-          Learn Ethereum
-        </Link>
-        <Link href="https://reactjs.org">Learn React</Link>
-        <Link href="https://thegraph.com/docs/quick-start">Learn The Graph</Link>
-      </Body>
-    </div>
+        <Addr provider={provider} />
+        <BalanceCheck provider={provider}></BalanceCheck>
+      </Body> */}
+    </>
   );
 }
 
