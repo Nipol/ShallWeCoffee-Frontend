@@ -1,7 +1,7 @@
 import React from "react";
 import { useCallback, useEffect, useState } from "react";
 import { Contract } from "@ethersproject/contracts";
-import { Link, Route } from "react-router-dom";
+import { Link, Route, Switch } from "react-router-dom";
 import Home from "./Home";
 import Sample from "./Sample";
 // import { getDefaultProvider } from "@ethersproject/providers";
@@ -74,8 +74,10 @@ function App() {
       </Header>
       {/* <Link to="/">Home</Link>
       <Link to="/sample">    Sample</Link> */}
-      <Route path="/" component={Home} exact={true}></Route>
-      <Route path="/sample" component={Sample}></Route>
+      <Switch>
+        <Route exact strict path="/" component={Home}></Route>
+        <Route exact strict path="/sample" component={Sample}></Route>
+      </Switch>
 
       {/* 
         / <- root path

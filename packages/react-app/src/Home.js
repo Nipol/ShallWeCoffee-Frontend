@@ -2,12 +2,13 @@ import React from "react";
 import { useCallback, useEffect, useState } from "react";
 import logo from "./logo.svg";
 import { Body, LogoImage, HeadButton, Headline, Subline } from "./components";
-import { Redirect } from "react-router-dom";
+import { useHistory } from "react-router-dom";
 import useWeb3Modal from "./hooks/useWeb3Modal";
 
 //@TODO: Disconnect Wallet에서 주소 나타나야 함.
 function WalletButton({ provider, loadWeb3Modal }) {
     const [addr, setAddr] = useState('');
+    let history = useHistory();
 
     const getAddress = useCallback(async () => {
         setTimeout(async () => {
@@ -33,7 +34,8 @@ function WalletButton({ provider, loadWeb3Modal }) {
           } else {
             console.log("월렛이 연결되어 있다면 Manager URL로 이동");
             console.log("그렇지만 Manager가 배포되어 있지 않다면 Manager만드는 화면으로 이동");
-            // <Redirect to={{pathname: "/"}}></Redirect>
+            console.log(addr);
+            history.push("/sample");
           }
         }}
       >
