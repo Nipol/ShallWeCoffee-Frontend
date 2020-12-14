@@ -72,8 +72,8 @@ function App() {
       <Header>
         <WalletButton provider={provider} loadWeb3Modal={loadWeb3Modal} logoutOfWeb3Modal={logoutOfWeb3Modal} />
       </Header>
-      <Link to="/">Home</Link>
-      <Link to="/sample">    Sample</Link>
+      {/* <Link to="/">Home</Link>
+      <Link to="/sample">    Sample</Link> */}
       <Route path="/" component={Home} exact={true}></Route>
       <Route path="/sample" component={Sample}></Route>
 
