@@ -36,7 +36,7 @@ function BalanceCheck({ provider }) {
 2. Create/Edit profile -> CEP (O?)
 3. Fetch data
 Buyer:
-1. Buy/Sell token
+1. Buy/Sell token (O)
 2. Make reservation
 Seller:
 1. getStatus
@@ -85,7 +85,6 @@ function CreateToken({ provider }) {
           //     gasLimit: BigNumber.from("4866690"),
           //   }
           // );
-          const rv = BigNumber.from("10000000000").toString();
           const real = await managerFactory.newManager(
             "coffee",
             "CTT",
@@ -131,22 +130,23 @@ function CreateToken({ provider }) {
 //   }, [provider]);
 // }
 // 구매
+// ***구매 후 가격 업데이트를 위해 리로드 필수***
 function BuyToken({ provider }) {
   const [uniSwap, setUniSwap] = useState(undefined);
-  const [mngFact, setMngFact] = useState(undefined);
-  const [mng, setMng] = useState(undefined);
   const [curPrice, setCurPrice] = useState(undefined);
+  const [path, setPath] = useState([]);
+  const [addr, setAddr] = useState(undefined);
   const getUniSwap = useCallback(async () => {
     if (typeof provider !== "undefined") {
       setTimeout(async () => {
         const signer = provider.getSigner();
         const addr = await signer.getAddress();
+        setAddr(addr);
         const mngFact = new Contract(
           addresses.MANAGER_FACTORY,
           abis.MANAGER_FACTORY_ABI,
           signer
         );
-        setMngFact(mngFact);
         // const mng = new Contract(urlSplit, abis.MANAGER_ABI, provider);
         // setMng(mng);
         const uniSwap = new Contract(
@@ -156,20 +156,18 @@ function BuyToken({ provider }) {
         );
         setUniSwap(uniSwap);
 
-        //const tokenAddr = await mng.token();
         const mngAddr = await mngFact.ownerToManager(addr);
         const mng = new Contract(mngAddr, abis.MANAGER_ABI, signer);
         const tokenAddr = await mng.token();
-        console.log(mngAddr);
         const WETH = await mngFact.WETH();
         const path = [WETH, tokenAddr];
-        const curPrice = await uniSwap.getAmountsIn(
+        setPath(path);
+        const priceList = await uniSwap.getAmountsIn(
           ethers.utils.parseEther("1.0"),
           path,
           { gasLimit: BigNumber.from("900000") }
         );
-        setCurPrice(curPrice);
-        console.log(curPrice[0].toString());
+        setCurPrice(priceList[0]);
         // const gas = await uniSwap.estimateGas.swapETHForExactTokens(
         //   BigNumber.from("1")
         //     .mul("10")
@@ -181,18 +179,6 @@ function BuyToken({ provider }) {
         //     gasLimit: BigNumber.from("9000000"),
         //   }
         // );
-        console.log("1");
-        await uniSwap.swapETHForExactTokens(
-          ethers.utils.parseEther("1.0"),
-          path,
-          addr,
-          ethers.constants.MaxUint256,
-          {
-            value: curPrice[0],
-            gasLimit: BigNumber.from("900000"),
-          }
-        );
-        console.log("Token purchase request sent");
       }, 500);
     }
   }, [provider]);
@@ -204,13 +190,19 @@ function BuyToken({ provider }) {
   return (
     <Button
       onClick={async () => {
-        if (
-          typeof uniSwap !== "undefined" &&
-          typeof mng !== "undefined" &&
-          typeof mngFact !== "undefined"
-        ) {
-          console.log("try");
-          //console.log({ curPrice: curPrice });
+        console.log({ curPrice: curPrice });
+        if (typeof uniSwap !== "undefined") {
+          await uniSwap.swapETHForExactTokens(
+            ethers.utils.parseEther("1.0"),
+            path,
+            addr,
+            ethers.constants.MaxUint256,
+            {
+              value: curPrice,
+              gasLimit: BigNumber.from("900000"),
+            }
+          );
+          console.log("Token purchase request sent");
         }
       }}
     >
@@ -219,89 +211,301 @@ function BuyToken({ provider }) {
   );
 }
 // 판매
-// function SellToken({ provider }) {
-//   const [uniSwap, setUniSwap] = useState("");
-//   const getUniSwap = useCallback(async () => {
-//     setTimeout(async () => {
-//       const signer = provider.getSigner();
-//       const addr = await signer.getAddress();
-//       const mngFact = new Contract(
-//         addresses.MANAGER_FACTORY,
-//         abis.MANAGER_FACTORY_ABI,
-//         provider
-//       );
-//       setMngFact(mngFact);
-//       const mng = new Contract(urlSplit, abis.MANAGER_ABI, provider);
-//       const uniSwap = new Contract(
-//         "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D",
-//         abis.UNI_SWAP,
-//         provider
-//       );
-//       setUniSwap(uniSwap);
+function SellToken({ provider }) {
+  const [uniSwap, setUniSwap] = useState(undefined);
+  const [mngFact, setMngFact] = useState(undefined);
+  const [mng, setMng] = useState(undefined);
 
-//       const tokenAddr = await mng.token();
-//       const WETH = await mngFact.WETH();
-//       const path = [WETH, tokenAddr];
-//       const curprice = await uniSwap.callStatic.getAmounts(
-//         BigNumber.from("1")
-//           .mul("10")
-//           .mul("18"),
-//         path
-//       );
-//       await uniSwap.swapExactTokensForETH(
-//         BigNumber.from("1")
-//           .mul("10")
-//           .mul("18"),
-//         path,
-//         addr
-//       );
-//       console.log("Token sell request sent");
-//     }, 500);
-//   }, [provider]);
-// }
-//3. 약속잡기
-//import { signERC2612Permit } from 'eth-permit';
+  const [addr, setAddr] = useState(undefined);
+  const [path, setPath] = useState([]);
+  const [curPrice, setCurPrice] = useState(0);
 
-// function MakeReserv({ provider }) {
-//   const mngAddr = url.split("");
-//   const value = web3.utils.toWei("1", "ether");
-//   const result = async () => {
-//     await signERC2612Permit(
-//       window.ethereum,
-//       tokenAddress,
-//       구매자주소,
-//       mngAddr,
-//       value
-//     );
-//   };
-//   const [mng, setMng] = useState("");
-//   const getMng = useCallback(async () => {
-//     setTimeout(async () => {
-//       if (typeof provider !== "undefined") {
-//         const mng = new Contract(mngAddr, abis.MANAGER_ABI, provider);
-//         setMng(mng);
-//         await mng.reservation(result.v, result.r, result.s);
-//         console.log("Reservation request sent");
-//       }
-//     });
-//   });
-//   useEffect(() => {
-//     if (!mng) {
-//       getMng();
-//     }
-//   }, [mng, getMng]);
-//   return (
-//     <Button
-//       onClick={async () => {
-//         if (typeof mng !== "undefined") {
-//           await mng.reservation(result.v, resylt.r, resylt.s);
-//         }
-//       }}
-//     >
-//       {!mng ? "not ready" : "ready"}
-//     </Button>
-//   );
-// }
+  const getUniSwap = useCallback(async () => {
+    if (typeof provider !== "undefined") {
+      setTimeout(async () => {
+        const signer = provider.getSigner();
+        const uniSwap = new Contract(
+          "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D",
+          abis.UNI_SWAP_ABI,
+          signer
+        );
+        setUniSwap(uniSwap);
+      }, 500);
+    }
+  }, [provider]);
+
+  const getMngFact = useCallback(async () => {
+    if (typeof provider !== "undefined") {
+      setTimeout(async () => {
+        const signer = provider.getSigner();
+        const mngFact = new Contract(
+          addresses.MANAGER_FACTORY,
+          abis.MANAGER_FACTORY_ABI,
+          signer
+        );
+        setMngFact(mngFact);
+      }, 500);
+    }
+  }, [provider]);
+
+  const getMng = useCallback(async () => {
+    if (
+      typeof provider !== "undefined" &&
+      typeof mngFact !== "undefined" &&
+      typeof addr !== "undefined"
+    ) {
+      setTimeout(async () => {
+        const mngAddr = await mngFact.ownerToManager(addr);
+        const signer = provider.getSigner();
+        const mng = new Contract(mngAddr, abis.MANAGER_ABI, signer);
+        setMng(mng);
+      }, 500);
+    }
+  }, [provider, mngFact, addr]);
+
+  const getAddr = useCallback(async () => {
+    if (typeof provider !== "undefined") {
+      setTimeout(async () => {
+        const signer = provider.getSigner();
+        const addr = await signer.getAddress();
+        setAddr(addr);
+      }, 500);
+    }
+  }, [provider]);
+
+  const getPath = useCallback(async () => {
+    if (typeof mngFact !== "undefined" && typeof mng !== "undefined") {
+      setTimeout(async () => {
+        const tokenAddr = await mng.token();
+        const WETH = await mngFact.WETH();
+        const path = [tokenAddr, WETH];
+        setPath(path);
+      }, 500);
+    }
+  }, [mngFact, mng]);
+
+  const getCurPrice = useCallback(async () => {
+    if (typeof uniSwap !== "undefined" && path.length >= 2) {
+      setTimeout(async () => {
+        console.log({ path: path });
+        const priceList = await uniSwap.getAmountsOut(
+          ethers.utils.parseEther("1.0"),
+          path,
+          { gasLimit: BigNumber.from("900000") }
+        );
+        console.log({ priceList: priceList });
+        setCurPrice(priceList[1]);
+      }, 500);
+    }
+  }, [uniSwap, path]);
+
+  // const getUniSwap = useCallback(async () => {
+  //   if (typeof provider !== "undefined") {
+  //     setTimeout(async () => {
+  //       const signer = provider.getSigner();
+
+  //       const mngFact = new Contract(
+  //         addresses.MANAGER_FACTORY,
+  //         abis.MANAGER_FACTORY_ABI,
+  //         signer
+  //       );
+  //       // const mng = new Contract(urlSplit, abis.MANAGER_ABI, provider);
+  //       // setMng(mng);
+  //       const uniSwap = new Contract(
+  //         "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D",
+  //         abis.UNI_SWAP_ABI,
+  //         signer
+  //       );
+  //       setUniSwap(uniSwap);
+
+  //       //const tokenAddr = await mng.token();
+  //       // const gas = await uniSwap.estimateGas.swapETHForExactTokens(
+  //       //   BigNumber.from("1")
+  //       //     .mul("10")
+  //       //     .mul("18"),
+  //       //   path,
+  //       //   addr,
+  //       //   ethers.constants.MaxUint256,
+  //       //   {
+  //       //     gasLimit: BigNumber.from("9000000"),
+  //       //   }
+  //       // );
+  //     }, 500);
+  //   }
+  // }, [provider]);
+  useEffect(() => {
+    if (!uniSwap) {
+      getUniSwap();
+    }
+    if (!mngFact) {
+      getMngFact();
+    }
+    if (!addr) {
+      getAddr();
+    }
+    if (!mng) {
+      getMng();
+    }
+    if (path.length == 0) {
+      getPath();
+    }
+    if (curPrice == 0) {
+      getCurPrice();
+    }
+  }, [
+    uniSwap,
+    getUniSwap,
+    mngFact,
+    getMngFact,
+    mng,
+    getMng,
+    addr,
+    getAddr,
+    path,
+    getPath,
+    curPrice,
+    getCurPrice,
+  ]);
+  return (
+    <Button
+      onClick={async () => {
+        console.log({ uniSwap: uniSwap });
+        console.log({ mngFact: mngFact });
+        console.log({ mng: mng });
+        console.log({ addr: addr });
+        console.log({ path: path });
+        console.log({ curPrice: curPrice });
+
+        if (typeof uniSwap !== "undefined") {
+          await uniSwap.swapExactTokensForETH(
+            ethers.utils.parseEther("1.0"),
+            curPrice,
+            path,
+            addr,
+            ethers.constants.MaxUint256,
+            {
+              gasLimit: BigNumber.from("900000"),
+            }
+          );
+          console.log("Token sell request sent");
+        }
+      }}
+    >
+      {!provider ? "Sell Not Ready" : "Sell ready"}
+    </Button>
+  );
+}
+
+function ApproveTrade({ provider }) {
+  const [mngFact, setMngFact] = useState(undefined);
+  const [mng, setMng] = useState(undefined);
+  const [addr, setAddr] = useState(undefined);
+  const [tokenAddr, setTokenAddr] = useState(undefined);
+  const [tokenCont, setTokenCont] = useState(undefined);
+
+  const getMngFact = useCallback(async () => {
+    if (typeof provider !== "undefined") {
+      setTimeout(async () => {
+        const signer = provider.getSigner();
+        const mngFact = new Contract(
+          addresses.MANAGER_FACTORY,
+          abis.MANAGER_FACTORY_ABI,
+          signer
+        );
+        setMngFact(mngFact);
+      }, 500);
+    }
+  }, [provider]);
+
+  const getMng = useCallback(async () => {
+    if (
+      typeof provider !== "undefined" &&
+      typeof mngFact !== "undefined" &&
+      typeof addr !== "undefined"
+    ) {
+      setTimeout(async () => {
+        const mngAddr = await mngFact.ownerToManager(addr);
+        const signer = provider.getSigner();
+        const mng = new Contract(mngAddr, abis.MANAGER_ABI, signer);
+        setMng(mng);
+      }, 500);
+    }
+  }, [provider, mngFact, addr]);
+
+  const getAddr = useCallback(async () => {
+    if (typeof provider !== "undefined") {
+      setTimeout(async () => {
+        const signer = provider.getSigner();
+        const addr = await signer.getAddress();
+        setAddr(addr);
+      }, 500);
+    }
+  }, [provider]);
+
+  const getTokenAddr = useCallback(async () => {
+    if (typeof mng !== "undefined") {
+      setTimeout(async () => {
+        const tokenAddr = await mng.token();
+        setTokenAddr(tokenAddr);
+      }, 500);
+    }
+  }, [mng]);
+
+  const getTokenCont = useCallback(async () => {
+    if (typeof tokenAddr !== "undefined" && typeof provider !== "undefined") {
+      setTimeout(async () => {
+        const signer = await provider.getSigner();
+        const tokenCont = new Contract(tokenAddr, abis.ERC20, signer);
+        setTokenCont(tokenCont);
+      }, 500);
+    }
+  }, [provider, tokenAddr]);
+
+  useEffect(() => {
+    if (!mngFact) {
+      getMngFact();
+    }
+    if (!addr) {
+      getAddr();
+    }
+    if (!mng) {
+      getMng();
+    }
+    if (!tokenAddr) {
+      getTokenAddr();
+    }
+    if (!tokenCont) {
+      getTokenCont();
+    }
+  }, [
+    mngFact,
+    getMngFact,
+    addr,
+    getAddr,
+    mng,
+    getMng,
+    tokenAddr,
+    getTokenAddr,
+    tokenCont,
+    getTokenCont,
+  ]);
+
+  return (
+    <Button
+      onClick={async () => {
+        if (typeof tokenCont !== "undefined") {
+          await tokenCont.approve(
+            "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D",
+            utils.parseEther("1.0")
+          );
+          console.log("Token approved");
+        }
+      }}
+    >
+      {!provider ? "Approve Not Ready" : "Approve ready"}
+    </Button>
+  );
+}
 
 //4.상태확인
 // function CheckStatus({ provider }) {
@@ -373,6 +577,8 @@ function App() {
       <Route path="/sample" component={Sample}></Route>
       <CreateToken provider={provider}>DeployManager</CreateToken>
       <BuyToken provider={provider}>BuyToken</BuyToken>
+      <SellToken provider={provider}>SellToken</SellToken>
+      <ApproveTrade provider={provider}>Approve</ApproveTrade>
       {/* 
         / <- root path
         /0x[manager hash] <- 매니저 path
