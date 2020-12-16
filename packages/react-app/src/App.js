@@ -4,13 +4,14 @@ import { Contract } from "@ethersproject/contracts";
 import { Link, Route } from "react-router-dom";
 import Home from "./Home";
 import Sample from "./Sample";
-// import { getDefaultProvider } from "@ethersproject/providers";
 import { ethers, BigNumber, utils } from "ethers";
 
 // eslint-disable-next-line
 import { Body, Button, Header } from "./components";
 import useWeb3Modal from "./hooks/useWeb3Modal";
 import { addresses, abis } from "@project/contracts";
+
+import { signERC2612Permit } from "eth-permit";
 // eslint-disable-next-line
 function BalanceCheck({ provider }) {
   const fakeDai = new Contract(addresses.FAKE_DAI, abis.ERC20, provider);
@@ -37,11 +38,12 @@ function BalanceCheck({ provider }) {
 3. Fetch data
 Buyer:
 1. Buy/Sell token (O)
-2. Make reservation
+2. Make reservation (O)
 Seller:
 1. getStatus
-2. confirm
-3. finalize
+2. confirm (O)
+3. finalize (O)
+4. cancel
 */
 //1. Token deploy
 function CreateToken({ provider }) {
@@ -85,7 +87,7 @@ function CreateToken({ provider }) {
           //     gasLimit: BigNumber.from("4866690"),
           //   }
           // );
-          const real = await managerFactory.newManager(
+          await managerFactory.newManager(
             "coffee",
             "CTT",
             utils.parseEther("100.0"),
@@ -129,6 +131,7 @@ function CreateToken({ provider }) {
 //     }, 500);
 //   }, [provider]);
 // }
+
 // 구매
 // ***구매 후 가격 업데이트를 위해 리로드 필수***
 function BuyToken({ provider }) {
@@ -147,8 +150,6 @@ function BuyToken({ provider }) {
           abis.MANAGER_FACTORY_ABI,
           signer
         );
-        // const mng = new Contract(urlSplit, abis.MANAGER_ABI, provider);
-        // setMng(mng);
         const uniSwap = new Contract(
           "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D",
           abis.UNI_SWAP_ABI,
@@ -168,17 +169,6 @@ function BuyToken({ provider }) {
           { gasLimit: BigNumber.from("900000") }
         );
         setCurPrice(priceList[0]);
-        // const gas = await uniSwap.estimateGas.swapETHForExactTokens(
-        //   BigNumber.from("1")
-        //     .mul("10")
-        //     .mul("18"),
-        //   path,
-        //   addr,
-        //   ethers.constants.MaxUint256,
-        //   {
-        //     gasLimit: BigNumber.from("9000000"),
-        //   }
-        // );
       }, 500);
     }
   }, [provider]);
@@ -210,7 +200,7 @@ function BuyToken({ provider }) {
     </Button>
   );
 }
-// 판매
+
 function SellToken({ provider }) {
   const [uniSwap, setUniSwap] = useState(undefined);
   const [mngFact, setMngFact] = useState(undefined);
@@ -299,40 +289,6 @@ function SellToken({ provider }) {
     }
   }, [uniSwap, path]);
 
-  // const getUniSwap = useCallback(async () => {
-  //   if (typeof provider !== "undefined") {
-  //     setTimeout(async () => {
-  //       const signer = provider.getSigner();
-
-  //       const mngFact = new Contract(
-  //         addresses.MANAGER_FACTORY,
-  //         abis.MANAGER_FACTORY_ABI,
-  //         signer
-  //       );
-  //       // const mng = new Contract(urlSplit, abis.MANAGER_ABI, provider);
-  //       // setMng(mng);
-  //       const uniSwap = new Contract(
-  //         "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D",
-  //         abis.UNI_SWAP_ABI,
-  //         signer
-  //       );
-  //       setUniSwap(uniSwap);
-
-  //       //const tokenAddr = await mng.token();
-  //       // const gas = await uniSwap.estimateGas.swapETHForExactTokens(
-  //       //   BigNumber.from("1")
-  //       //     .mul("10")
-  //       //     .mul("18"),
-  //       //   path,
-  //       //   addr,
-  //       //   ethers.constants.MaxUint256,
-  //       //   {
-  //       //     gasLimit: BigNumber.from("9000000"),
-  //       //   }
-  //       // );
-  //     }, 500);
-  //   }
-  // }, [provider]);
   useEffect(() => {
     if (!uniSwap) {
       getUniSwap();
@@ -507,18 +463,365 @@ function ApproveTrade({ provider }) {
   );
 }
 
-//4.상태확인
-// function CheckStatus({ provider }) {
-//   const booker = buyerAddr;
+function MakeReserv({ provider }) {
+  const [mngFact, setMngFact] = useState(undefined);
+
+  const [tokenAddr, setTokenAddr] = useState(undefined);
+  const [addr, setAddr] = useState(undefined);
+  const [mng, setMng] = useState(undefined);
+  const [mngAddr, setMngAddr] = useState(undefined);
+
+  const getMngFact = useCallback(async () => {
+    if (typeof provider !== "undefined") {
+      setTimeout(async () => {
+        const signer = provider.getSigner();
+        const mngFact = new Contract(
+          addresses.MANAGER_FACTORY,
+          abis.MANAGER_FACTORY_ABI,
+          signer
+        );
+        setMngFact(mngFact);
+      }, 500);
+    }
+  }, [provider]);
+
+  const getTokenAddr = useCallback(async () => {
+    if (typeof mng !== "undefined") {
+      setTimeout(async () => {
+        const tokenAddr = await mng.token();
+        setTokenAddr(tokenAddr);
+      }, 500);
+    }
+  }, [mng]);
+
+  const getAddr = useCallback(async () => {
+    if (typeof provider !== "undefined") {
+      setTimeout(async () => {
+        const signer = provider.getSigner();
+        const addr = await signer.getAddress();
+        setAddr(addr);
+      }, 500);
+    }
+  }, [provider]);
+
+  const getMng = useCallback(async () => {
+    if (
+      typeof provider !== "undefined" &&
+      typeof mngFact !== "undefined" &&
+      typeof addr !== "undefined"
+    ) {
+      setTimeout(async () => {
+        const mngAddr = await mngFact.ownerToManager(addr);
+        const signer = provider.getSigner();
+        const mng = new Contract(mngAddr, abis.MANAGER_ABI, signer);
+        setMng(mng);
+      }, 500);
+    }
+  }, [provider, mngFact, addr]);
+
+  const getMngAddr = useCallback(async () => {
+    if (typeof addr !== "undefined" && typeof mngFact !== "undefined") {
+      setTimeout(async () => {
+        const mngAddr = await mngFact.ownerToManager(addr);
+        setMngAddr(mngAddr);
+      }, 500);
+    }
+  }, [addr, mngFact]);
+
+  useEffect(() => {
+    if (!mngFact) {
+      getMngFact();
+    }
+    if (!addr) {
+      getAddr();
+    }
+    if (!mng) {
+      getMng();
+    }
+    if (!tokenAddr) {
+      getTokenAddr();
+    }
+    if (!mngAddr) {
+      getMngAddr();
+    }
+  }, [
+    mngFact,
+    getMngFact,
+    addr,
+    getAddr,
+    mng,
+    getMng,
+    tokenAddr,
+    getTokenAddr,
+    mngAddr,
+    getMngAddr,
+  ]);
+  return (
+    <Button
+      onClick={async () => {
+        if (
+          typeof tokenAddr !== "undefined" &&
+          typeof addr !== "undefined" &&
+          typeof mngAddr !== "undefined" &&
+          typeof mng !== "undefined"
+        ) {
+          const value = utils.parseEther("2.0").toString();
+          const result = await signERC2612Permit(
+            window.ethereum,
+            tokenAddr,
+            addr,
+            mngAddr,
+            value
+          );
+          await mng.reservation(result.v, result.r, result.s, {
+            gasLimit: BigNumber.from("5000000"),
+          });
+          console.log({ result: result });
+        }
+      }}
+    >
+      {!provider ? "Resev Not Ready" : "Reserv ready"}
+    </Button>
+  );
+}
+
+function ConFinReserv({ provider }) {
+  const booker = "0x22797ee264d91C00D4E5f0C7B535841C56F296EA";
+
+  const [mngFact, setMngFact] = useState(undefined);
+  const [addr, setAddr] = useState(undefined);
+  const [mng, setMng] = useState(undefined);
+
+  const getMngFact = useCallback(async () => {
+    if (typeof provider !== "undefined") {
+      setTimeout(async () => {
+        const signer = provider.getSigner();
+        const mngFact = new Contract(
+          addresses.MANAGER_FACTORY,
+          abis.MANAGER_FACTORY_ABI,
+          signer
+        );
+        setMngFact(mngFact);
+      }, 500);
+    }
+  }, [provider]);
+
+  const getMng = useCallback(async () => {
+    if (
+      typeof provider !== "undefined" &&
+      typeof mngFact !== "undefined" &&
+      typeof addr !== "undefined"
+    ) {
+      setTimeout(async () => {
+        const mngAddr = await mngFact.ownerToManager(addr);
+        const signer = provider.getSigner();
+        const mng = new Contract(mngAddr, abis.MANAGER_ABI, signer);
+        setMng(mng);
+      }, 500);
+    }
+  }, [provider, mngFact, addr]);
+
+  const getAddr = useCallback(async () => {
+    if (typeof provider !== "undefined") {
+      setTimeout(async () => {
+        const signer = provider.getSigner();
+        const addr = await signer.getAddress();
+        setAddr(addr);
+      }, 500);
+    }
+  }, [provider]);
+
+  useEffect(() => {
+    if (!mngFact) {
+      getMngFact();
+    }
+    if (!addr) {
+      getAddr();
+    }
+    if (!mng) {
+      getMng();
+    }
+  }, [mngFact, getMngFact, addr, getAddr, mng, getMng]);
+  return (
+    <>
+      <div>{booker}</div>
+      <Button
+        onClick={async () => {
+          if (
+            typeof mngFact !== "undefined" &&
+            typeof addr !== "undefined" &&
+            typeof mng !== "undefined"
+          ) {
+            await mng.confirm(booker);
+            await mng.finalize(booker, true);
+            console.log("Reservation confirmed");
+          }
+        }}
+      >
+        {!provider ? "Confirm Not Ready" : "Confirm ready"}
+      </Button>
+    </>
+  );
+}
+
+function CheckStatus({ provider }) {
+  const booker = "0x22797ee264d91C00D4E5f0C7B535841C56F296EA";
+
+  const [mngFact, setMngFact] = useState(undefined);
+  const [addr, setAddr] = useState(undefined);
+  const [mng, setMng] = useState(undefined);
+
+  const getMngFact = useCallback(async () => {
+    if (typeof provider !== "undefined") {
+      setTimeout(async () => {
+        const signer = provider.getSigner();
+        const mngFact = new Contract(
+          addresses.MANAGER_FACTORY,
+          abis.MANAGER_FACTORY_ABI,
+          signer
+        );
+        setMngFact(mngFact);
+      }, 500);
+    }
+  }, [provider]);
+
+  const getMng = useCallback(async () => {
+    if (
+      typeof provider !== "undefined" &&
+      typeof mngFact !== "undefined" &&
+      typeof addr !== "undefined"
+    ) {
+      setTimeout(async () => {
+        const mngAddr = await mngFact.ownerToManager(addr);
+        const signer = provider.getSigner();
+        const mng = new Contract(mngAddr, abis.MANAGER_ABI, signer);
+        setMng(mng);
+      }, 500);
+    }
+  }, [provider, mngFact, addr]);
+
+  const getAddr = useCallback(async () => {
+    if (typeof provider !== "undefined") {
+      setTimeout(async () => {
+        const signer = provider.getSigner();
+        const addr = await signer.getAddress();
+        setAddr(addr);
+      }, 500);
+    }
+  }, [provider]);
+
+  useEffect(() => {
+    if (!mngFact) {
+      getMngFact();
+    }
+    if (!addr) {
+      getAddr();
+    }
+    if (!mng) {
+      getMng();
+    }
+  }, [mngFact, getMngFact, addr, getAddr, mng, getMng]);
+  return (
+    <>
+      <div>{booker}</div>
+      <Button
+        onClick={async () => {
+          if (
+            typeof mngFact !== "undefined" &&
+            typeof addr !== "undefined" &&
+            typeof mng !== "undefined"
+          ) {
+            const result = await mng.getStatus(booker);
+            console.log("Booker status");
+            console.log({ result: result });
+          }
+        }}
+      >
+        {!provider ? "Status Not Ready" : "Status ready"}
+      </Button>
+    </>
+  );
+}
+
+// function CancelReserv({ provider }) {
+//   const booker = "0x22797ee264d91C00D4E5f0C7B535841C56F296EA";
+
+//   const booker = "0x22797ee264d91C00D4E5f0C7B535841C56F296EA";
+
+//   const [mngFact, setMngFact] = useState(undefined);
+//   const [addr, setAddr] = useState(undefined);
+//   const [mng, setMng] = useState(undefined);
+
+//   const getMngFact = useCallback(async () => {
+//     if (typeof provider !== "undefined") {
+//       setTimeout(async () => {
+//         const signer = provider.getSigner();
+//         const mngFact = new Contract(
+//           addresses.MANAGER_FACTORY,
+//           abis.MANAGER_FACTORY_ABI,
+//           signer
+//         );
+//         setMngFact(mngFact);
+//       }, 500);
+//     }
+//   }, [provider]);
+
 //   const getMng = useCallback(async () => {
-//     setTimeout(async () => {
-//       if (typeof provider !== "undefined") {
-//         const mng = new Contract(mngAddr, abis.MANAGER_ABI, provider);
+//     if (
+//       typeof provider !== "undefined" &&
+//       typeof mngFact !== "undefined" &&
+//       typeof addr !== "undefined"
+//     ) {
+//       setTimeout(async () => {
+//         const mngAddr = await mngFact.ownerToManager(addr);
+//         const signer = provider.getSigner();
+//         const mng = new Contract(mngAddr, abis.MANAGER_ABI, signer);
 //         setMng(mng);
-//         mng.getStatus(booker);
-//       }
-//     });
-//   });
+//       }, 500);
+//     }
+//   }, [provider, mngFact, addr]);
+
+//   const getAddr = useCallback(async () => {
+//     if (typeof provider !== "undefined") {
+//       setTimeout(async () => {
+//         const signer = provider.getSigner();
+//         const addr = await signer.getAddress();
+//         setAddr(addr);
+//       }, 500);
+//     }
+//   }, [provider]);
+
+//   useEffect(() => {
+//     if (!mngFact) {
+//       getMngFact();
+//     }
+//     if (!addr) {
+//       getAddr();
+//     }
+//     if (!mng) {
+//       getMng();
+//     }
+//   }, [mngFact, getMngFact, addr, getAddr, mng, getMng]);
+//   return (
+//     <>
+//       <div>{booker}</div>
+//       <Button
+//         onClick={async () => {
+//           if (
+//             typeof mngFact !== "undefined" &&
+//             typeof addr !== "undefined" &&
+//             typeof mng !== "undefined"
+//           ) {
+//             await mng.confirm(booker);
+//             await mng.finalize(booker, true);
+//             console.log("Reservation confirmed");
+//           }
+//         }}
+//       >
+//         {!provider ? "Confirm Not Ready" : "Confirm ready"}
+//       </Button>
+//     </>
+//   );
 // }
 
 //@TODO: Disconnect Wallet에서 주소 나타나야 함.
@@ -536,27 +839,6 @@ function WalletButton({ provider, loadWeb3Modal, logoutOfWeb3Modal }) {
       {!provider ? "Connect Wallet" : "Disconnect Wallet"}
     </Button>
   );
-}
-// eslint-disable-next-line
-function Addr({ provider }) {
-  const [addr, setAddr] = useState("");
-  const getAddress = useCallback(async () => {
-    setTimeout(async () => {
-      if (typeof provider !== "undefined") {
-        const signer = provider.getSigner();
-        const addr = await signer.getAddress();
-        setAddr(addr);
-      }
-    }, 500);
-  }, [provider]);
-
-  useEffect(() => {
-    if (!addr) {
-      getAddress();
-    }
-  }, [addr, getAddress]);
-
-  return <>{addr || ""}</>;
 }
 
 function App() {
@@ -579,25 +861,9 @@ function App() {
       <BuyToken provider={provider}>BuyToken</BuyToken>
       <SellToken provider={provider}>SellToken</SellToken>
       <ApproveTrade provider={provider}>Approve</ApproveTrade>
-      {/* 
-        / <- root path
-        /0x[manager hash] <- 매니저 path
-          wallet 연결된 사람이, manager에서 조회 했을 때 Owner다.
-            요청된 약속, 및 진행중인 약속 탭이 보인다.
-          wallet 연결된 사람이, mamger에서 조회 했을 때 오너가 아니라면,
-            요청한 약속
-
-          0x[manager hash]/profile -> 프로필 보여주는 거
-          0x[manager hash]/requested -> 요청한 약속 보여주는 거
-       */}
-
-      {/* <Header>
-        <WalletButton provider={provider} loadWeb3Modal={loadWeb3Modal} logoutOfWeb3Modal={logoutOfWeb3Modal} />
-      </Header>
-      <Body>
-        <Addr provider={provider} />
-        <BalanceCheck provider={provider}></BalanceCheck>
-      </Body> */}
+      <MakeReserv provider={provider}>Reservation</MakeReserv>
+      <ConFinReserv provider={provider}>Confirm</ConFinReserv>
+      <CheckStatus provider={provider}>Cancel</CheckStatus>
     </>
   );
 }
