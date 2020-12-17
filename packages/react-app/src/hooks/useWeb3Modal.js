@@ -11,7 +11,11 @@ const NETWORK_NAME = "goerli";
 
 function useWeb3Modal(config = {}) {
   const [provider, setProvider] = useState();
-  const { autoLoad = true, infuraId = INFURA_ID, NETWORK = NETWORK_NAME } = config;
+  const {
+    autoLoad = false,
+    infuraId = INFURA_ID,
+    NETWORK = NETWORK_NAME,
+  } = config;
 
   const web3Modal = new Web3Modal({
     network: NETWORK,
@@ -33,11 +37,11 @@ function useWeb3Modal(config = {}) {
   }, [web3Modal]);
 
   const logoutOfWeb3Modal = useCallback(
-    async function () {
+    async function() {
       await web3Modal.clearCachedProvider();
       window.location.reload();
     },
-    [web3Modal],
+    [web3Modal]
   );
 
   // If user has loaded a wallet before, load it automatically.
