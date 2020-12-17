@@ -1,9 +1,13 @@
 import React from "react";
 import { useCallback, useEffect, useState } from "react";
 import { Contract } from "@ethersproject/contracts";
-import { Link, Route } from "react-router-dom";
+import { Link, Route, Switch } from "react-router-dom";
+import fulllogo from "./fulllogo.svg";
 import Home from "./Home";
+import Profile from "./Profile";
+import Create from "./Create";
 import Sample from "./Sample";
+import Token from "./Token";
 import { ethers, BigNumber, utils } from "ethers";
 
 // eslint-disable-next-line
@@ -67,7 +71,7 @@ function CreateToken({ provider }) {
     }
   }, [managerFactory, getManagerFactory]);
   return (
-    <Button
+    <Button style={{fontSize: '11px', lineHeight: '20px', padding: '4px 12px', borderRadius: '199px'}}
       onClick={async () => {
         if (typeof managerFactory !== "undefined") {
           // const result = await managerFactory.callStatic.newManager(
@@ -847,12 +851,21 @@ function App() {
   return (
     <>
       <Header>
-        <WalletButton
-          provider={provider}
-          loadWeb3Modal={loadWeb3Modal}
-          logoutOfWeb3Modal={logoutOfWeb3Modal}
-        />
+        <div className="left">
+          <img src={fulllogo} alt="shallwecoffee-logo" />
+        </div>
+        <div className="right">
+          <WalletButton provider={provider} loadWeb3Modal={loadWeb3Modal} logoutOfWeb3Modal={logoutOfWeb3Modal} />
+        </div>
       </Header>
+      <Switch>
+        <Route exact strict path="/" component={Home}></Route>
+        <Route exact path="/create" component={Create}></Route>
+        <Route path="/:manager" component={Profile}></Route>
+        <Route exact strict path="/token" component={Token}></Route>
+        <Route exact strict path="/sample" component={Sample}></Route>
+      </Switch>
+
       <Link to="/">Home</Link>
       <Link to="/sample"> Sample</Link>
       <Route path="/" component={Home} exact={true}></Route>
