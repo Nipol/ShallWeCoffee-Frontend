@@ -2,8 +2,12 @@ import React from "react";
 import { useCallback, useEffect, useState } from "react";
 import { Contract } from "@ethersproject/contracts";
 import { Link, Route, Switch } from "react-router-dom";
+import fulllogo from "./fulllogo.svg";
 import Home from "./Home";
+import Profile from "./Profile";
+import Create from "./Create";
 import Sample from "./Sample";
+import Token from "./Token";
 // import { getDefaultProvider } from "@ethersproject/providers";
 // import { ethers } from "ethers";
 
@@ -24,7 +28,7 @@ function BalanceCheck({ provider }) {
 //@TODO: Disconnect Wallet에서 주소 나타나야 함.
 function WalletButton({ provider, loadWeb3Modal, logoutOfWeb3Modal }) {
   return (
-    <Button
+    <Button style={{fontSize: '11px', lineHeight: '20px', padding: '4px 12px', borderRadius: '199px'}}
       onClick={async () => {
         if (!provider) {
           loadWeb3Modal();
@@ -42,11 +46,12 @@ function Addr({provider}) {
   const [addr, setAddr] = useState('');
 
   const getAddress = useCallback(async () => {
-    setTimeout(async () => {
+    const timerId = setTimeout(async () => {
       if(typeof(provider) !== 'undefined') {
         const signer = provider.getSigner();
         const addr = await signer.getAddress();
         setAddr(addr);
+        clearTimeout(timerId);
       }
     }, 500);
   },[provider]);
@@ -70,34 +75,20 @@ function App() {
   return (
     <>
       <Header>
-        <WalletButton provider={provider} loadWeb3Modal={loadWeb3Modal} logoutOfWeb3Modal={logoutOfWeb3Modal} />
+        <div className="left">
+          <img src={fulllogo} alt="shallwecoffee-logo" />
+        </div>
+        <div className="right">
+          <WalletButton provider={provider} loadWeb3Modal={loadWeb3Modal} logoutOfWeb3Modal={logoutOfWeb3Modal} />
+        </div>
       </Header>
-      {/* <Link to="/">Home</Link>
-      <Link to="/sample">    Sample</Link> */}
       <Switch>
         <Route exact strict path="/" component={Home}></Route>
+        <Route exact path="/create" component={Create}></Route>
+        <Route path="/:manager" component={Profile}></Route>
+        <Route exact strict path="/token" component={Token}></Route>
         <Route exact strict path="/sample" component={Sample}></Route>
       </Switch>
-
-      {/* 
-        / <- root path
-        /0x[manager hash] <- 매니저 path
-          wallet 연결된 사람이, manager에서 조회 했을 때 Owner다.
-            요청된 약속, 및 진행중인 약속 탭이 보인다.
-          wallet 연결된 사람이, mamger에서 조회 했을 때 오너가 아니라면,
-            요청한 약속
-
-          0x[manager hash]/profile -> 프로필 보여주는 거
-          0x[manager hash]/requested -> 요청한 약속 보여주는 거
-       */}
-
-      {/* <Header>
-        <WalletButton provider={provider} loadWeb3Modal={loadWeb3Modal} logoutOfWeb3Modal={logoutOfWeb3Modal} />
-      </Header>
-      <Body>
-        <Addr provider={provider} />
-        <BalanceCheck provider={provider}></BalanceCheck>
-      </Body> */}
     </>
   );
 }
