@@ -12,7 +12,7 @@ const NETWORK_NAME = "goerli";
 function useWeb3Modal(config = {}) {
   const [provider, setProvider] = useState();
   const {
-    autoLoad = false,
+    autoLoad = true,
     infuraId = INFURA_ID,
     NETWORK = NETWORK_NAME,
   } = config;
