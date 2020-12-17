@@ -35,7 +35,7 @@ function WalletButton({ provider, loadWeb3Modal }) {
             console.log("월렛이 연결되어 있다면 Manager URL로 이동");
             console.log("그렇지만 Manager가 배포되어 있지 않다면 Manager만드는 화면으로 이동");
             console.log(addr);
-            history.push("/:managerAddr");
+            history.push("/create");
           }
         }}
       >
@@ -49,12 +49,12 @@ function Home() {
 
     return (
         <>
-        <ContentBody>
-            <LogoImage src={logo} alt="shallwecoffee-logo" />
-            <LandHeadline>우리, 커피 한잔 할까요?</LandHeadline>
-            <LandSubline>만나보고 싶은 사람이 있으신가요? <br/>Shall we coffee에서 토큰을 구입하고 약속을 잡아보세요.</LandSubline>
-            <WalletButton provider={provider} loadWeb3Modal={loadWeb3Modal}>이더리움 지갑 연결하기</WalletButton>
-        </ContentBody>
+          <ContentBody>
+              <LogoImage src={logo} alt="shallwecoffee-logo" />
+              <LandHeadline>우리, 커피 한잔 할까요?</LandHeadline>
+              <LandSubline>만나보고 싶은 사람이 있으신가요? <br/>Shall we coffee에서 토큰을 구입하고 약속을 잡아보세요.</LandSubline>
+              <WalletButton provider={provider} loadWeb3Modal={loadWeb3Modal}>이더리움 지갑 연결하기</WalletButton>
+          </ContentBody>
         </>
     );
 }

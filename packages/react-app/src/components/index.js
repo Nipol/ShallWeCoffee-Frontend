@@ -65,6 +65,21 @@ export const ProfileBody = styled.div`
     width: 940px;
     padding-right: 500px;
 
+    & > div.addr {
+      width: 500px;
+      margin: 1rem;
+      padding: 1rem;
+      background: #F3F3F3;
+      border-radius: 199px;
+    }
+
+    & > div.buttons {
+      display: flex;
+      flex-direction: row;
+      align-items: flex-start;
+      width: 100%;
+    }
+
     & > div {
       margin: 0 1rem;
       width: 200px;

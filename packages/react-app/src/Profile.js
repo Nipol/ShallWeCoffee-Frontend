@@ -1,7 +1,5 @@
 import React from "react";
 import { useCallback, useEffect, useState } from "react";
-import logo from "./logo.svg";
-import link from "./link.svg";
 import pin from "./pin.svg";
 import work from "./work.svg";
 import pic from "./photo1-2.jpg";
@@ -9,21 +7,531 @@ import {
     BrowserRouter as Router,
     Switch,
     Route,
-    Link,
     NavLink,
     useParams,
-    useRouteMatch
+    useRouteMatch,
+    useLocation
   } from "react-router-dom";
-import { Body, Jumbotron, ProfilePic, MiniNav, ProfileBody, InputContainer, GreyBack, Headline, TokenStates, RowContainer, LinkButton, ColumnContainer } from "./components";
-import { useHistory } from "react-router-dom";
+import { Body, Jumbotron, ProfilePic, MiniNav, ProfileBody, InputContainer, GreyBack, TokenStates, RowContainer, LinkButton, ColumnContainer } from "./components";
 import ReactMarkdown from 'react-markdown';
 import useWeb3Modal from "./hooks/useWeb3Modal";
 import { Tab, Tabs, TabList, TabPanel } from 'react-tabs';
+import { addresses, abis } from "@project/contracts";
+import { ethers, BigNumber, utils, Contract } from "ethers";
 import Proptypes from "prop-types";
+import { signERC2612Permit } from "eth-permit";
+
+const Field = ({placeholder, unit, onUpdate, value}) => {
+    return (
+        <>
+        <InputContainer>
+            <input placeholder={placeholder} value={value} onChange={(e) => {onUpdate(e.target.value);}}/>
+            {unit !== "" ? <div>{unit}</div> : null }
+        </InputContainer>
+        </>
+    );
+}
+
+Field.propTypes = {
+    value: Proptypes.string,
+    placeholder: Proptypes.string,
+    unit: Proptypes.string
+}
+
+const Confirm = ({ provider }) => {
+    const booker = "0x2e6bE9855A3bF02C73Ba74B7d756a63DB7762238";
+  
+    const [mngFact, setMngFact] = useState(undefined);
+    const [addr, setAddr] = useState(undefined);
+    const [mng, setMng] = useState(undefined);
+  
+    const getMngFact = useCallback(async () => {
+      if (typeof provider !== "undefined") {
+        setTimeout(async () => {
+          const signer = provider.getSigner();
+          const mngFact = new Contract(
+            addresses.MANAGER_FACTORY,
+            abis.MANAGER_FACTORY_ABI,
+            signer
+          );
+          setMngFact(mngFact);
+        }, 500);
+      }
+    }, [provider]);
+  
+    const getMng = useCallback(async () => {
+      if (
+        typeof provider !== "undefined" &&
+        typeof mngFact !== "undefined" &&
+        typeof addr !== "undefined"
+      ) {
+        setTimeout(async () => {
+          const mngAddr = await mngFact.ownerToManager(addr);
+          const signer = provider.getSigner();
+          const mng = new Contract(mngAddr, abis.MANAGER_ABI, signer);
+          setMng(mng);
+        }, 500);
+      }
+    }, [provider, mngFact, addr]);
+  
+    const getAddr = useCallback(async () => {
+      if (typeof provider !== "undefined") {
+        setTimeout(async () => {
+          const signer = provider.getSigner();
+          const addr = await signer.getAddress();
+          setAddr(addr);
+        }, 500);
+      }
+    }, [provider]);
+  
+    useEffect(() => {
+      if (!mngFact) {
+        getMngFact();
+      }
+      if (!addr) {
+        getAddr();
+      }
+      if (!mng) {
+        getMng();
+      }
+    }, [mngFact, getMngFact, addr, getAddr, mng, getMng]);
+    return (
+      <>
+        <LinkButton style={{borderRadius: "199px"}}
+          onClick={async () => {
+            if (
+              typeof mngFact !== "undefined" &&
+              typeof addr !== "undefined" &&
+              typeof mng !== "undefined"
+            ) {
+              await mng.confirm(booker);
+              console.log("Reservation confirmed");
+            }
+          }}
+        >
+          {!provider ? "Confirm Not Ready" : "수락"}
+        </LinkButton>
+      </>
+    );
+  }
+
+  const Finalize = ({ provider }) => {
+    const booker = "0x2e6bE9855A3bF02C73Ba74B7d756a63DB7762238";
+  
+    const [mngFact, setMngFact] = useState(undefined);
+    const [addr, setAddr] = useState(undefined);
+    const [mng, setMng] = useState(undefined);
+  
+    const getMngFact = useCallback(async () => {
+      if (typeof provider !== "undefined") {
+        setTimeout(async () => {
+          const signer = provider.getSigner();
+          const mngFact = new Contract(
+            addresses.MANAGER_FACTORY,
+            abis.MANAGER_FACTORY_ABI,
+            signer
+          );
+          setMngFact(mngFact);
+        }, 500);
+      }
+    }, [provider]);
+  
+    const getMng = useCallback(async () => {
+      if (
+        typeof provider !== "undefined" &&
+        typeof mngFact !== "undefined" &&
+        typeof addr !== "undefined"
+      ) {
+        setTimeout(async () => {
+          const mngAddr = await mngFact.ownerToManager(addr);
+          const signer = provider.getSigner();
+          const mng = new Contract(mngAddr, abis.MANAGER_ABI, signer);
+          setMng(mng);
+        }, 500);
+      }
+    }, [provider, mngFact, addr]);
+  
+    const getAddr = useCallback(async () => {
+      if (typeof provider !== "undefined") {
+        setTimeout(async () => {
+          const signer = provider.getSigner();
+          const addr = await signer.getAddress();
+          setAddr(addr);
+        }, 500);
+      }
+    }, [provider]);
+  
+    useEffect(() => {
+      if (!mngFact) {
+        getMngFact();
+      }
+      if (!addr) {
+        getAddr();
+      }
+      if (!mng) {
+        getMng();
+      }
+    }, [mngFact, getMngFact, addr, getAddr, mng, getMng]);
+    return (
+      <>
+        <LinkButton style={{borderRadius: "199px"}}
+          onClick={async () => {
+            if (
+              typeof mngFact !== "undefined" &&
+              typeof addr !== "undefined" &&
+              typeof mng !== "undefined"
+            ) {
+              await mng.finalize(booker, {gasLimit: BigNumber.from('500000')});
+              console.log("Reservation confirmed");
+            }
+          }}
+        >
+          {!provider ? "Confirm Not Ready" : "약속 종료"}
+        </LinkButton>
+      </>
+    );
+  }
+
+const Reservation = ({provider, location}) => {
+    const [mngFact, setMngFact] = useState(undefined);
+    const [tokenAddr, setTokenAddr] = useState(undefined);
+    const [addr, setAddr] = useState(undefined);
+    const [mng, setMng] = useState(undefined);
+    const [mngAddr, setMngAddr] = useState(undefined);
+    const [reqToken, setReqToken] = useState(undefined);
+
+    const getMngFact = useCallback(async () => {
+        if (typeof provider !== "undefined") {
+          setTimeout(async () => {
+            const signer = provider.getSigner();
+            const mngFact = new Contract(
+              addresses.MANAGER_FACTORY,
+              abis.MANAGER_FACTORY_ABI,
+              signer
+            );
+            setMngFact(mngFact);
+          }, 500);
+        }
+      }, [provider]);
+    
+      const getTokenAddr = useCallback(async () => {
+        if (typeof mng !== "undefined") {
+          setTimeout(async () => {
+            const tokenAddr = await mng.token();
+            setTokenAddr(tokenAddr);
+          }, 500);
+        }
+      }, [mng]);
+    
+      const getAddr = useCallback(async () => {
+        if (typeof provider !== "undefined") {
+          setTimeout(async () => {
+            const signer = provider.getSigner();
+            const addr = await signer.getAddress();
+            setAddr(addr);
+          }, 500);
+        }
+      }, [provider]);
+    
+      const getMng = useCallback(async () => {
+        if (
+          typeof provider !== "undefined" &&
+          typeof mngFact !== "undefined" &&
+          typeof addr !== "undefined"
+        ) {
+          setTimeout(async () => {
+            const managerAddr = (location.pathname.split('/'))[1];
+            const signer = provider.getSigner();
+            const mng = new Contract(managerAddr, abis.MANAGER_ABI, signer);
+            setMng(mng);
+          }, 500);
+        }
+      }, [provider, mngFact, addr, location.pathname]);
+    
+      const getMngAddr = useCallback(async () => {
+        if (typeof addr !== "undefined" && typeof mngFact !== "undefined") {
+          setTimeout(async () => {
+            const managerAddr = (location.pathname.split('/'))[1];
+            setMngAddr(managerAddr);
+          }, 500);
+        }
+      }, [addr, location.pathname, mngFact]);
+
+      const getReqToken = useCallback(() => {
+        if (typeof provider !== "undefined") {
+            setTimeout(async () => {
+                const signer = provider.getSigner();
+                const managerAddr = (location.pathname.split('/'))[1];
+                const mng = new Contract(managerAddr, abis.MANAGER_ABI, signer);
+                const req = await mng.requireAmount();
+                setReqToken(utils.formatEther(req.toString()).toString());
+            }, 500);
+        }
+    }, [location.pathname, provider]);
+    
+      useEffect(() => {
+        if (!mngFact) {
+          getMngFact();
+        }
+        if (!addr) {
+          getAddr();
+        }
+        if (!mng) {
+          getMng();
+        }
+        if (!tokenAddr) {
+          getTokenAddr();
+        }
+        if (!mngAddr) {
+          getMngAddr();
+        }
+        if(!reqToken) {
+            getReqToken();
+        }
+      }, [mngFact, getMngFact, addr, getAddr, mng, getMng, tokenAddr, getTokenAddr, mngAddr, getMngAddr, reqToken, getReqToken]);
+      return (
+        <LinkButton
+          onClick={async () => {
+            if (
+              typeof tokenAddr !== "undefined" &&
+              typeof addr !== "undefined" &&
+              typeof mngAddr !== "undefined" &&
+              typeof mng !== "undefined"
+            ) {
+              const value = utils.parseEther(reqToken).toString();
+              const result = await signERC2612Permit(
+                window.ethereum,
+                tokenAddr,
+                addr,
+                mngAddr,
+                value
+              );
+              await mng.reservation(result.v, result.r, result.s, {
+                gasLimit: BigNumber.from("5000000"),
+              });
+              console.log({ result: result });
+            }
+          }}
+        >
+          {!provider ? "Resev Not Ready" : "토큰을 사용하여 약속하기"}
+        </LinkButton>
+      );
+}
+
+const BuyToken = ({provider, buyToken, location}) => {
+    const [uniSwap, setUniSwap] = useState(undefined);
+    const [curPrice, setCurPrice] = useState(undefined);
+    const [path, setPath] = useState([]);
+    const [addr, setAddr] = useState(undefined);
+
+    const getAddr = useCallback(async () => {
+        if (typeof provider !== "undefined") {
+            setTimeout(async () => {
+                const signer = provider.getSigner();
+                const addr = await signer.getAddress();
+                setAddr(addr);
+            }, 500);
+        }
+    }, [provider]);
+
+    const getUniSwap = useCallback(async () => {
+        if (typeof provider !== "undefined") {
+            setTimeout(async () => {
+                const signer = provider.getSigner();
+                const mngFact = new Contract(
+                    addresses.MANAGER_FACTORY,
+                    abis.MANAGER_FACTORY_ABI,
+                    signer
+                );
+                const uniSwap = new Contract(
+                    "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D",
+                    abis.UNI_SWAP_ABI,
+                    signer
+                    );
+                setUniSwap(uniSwap);
+                const managerAddr = (location.pathname.split('/'))[1];
+                const mng = new Contract(managerAddr, abis.MANAGER_ABI, signer);
+                const tokenAddr = await mng.token();
+                const WETH = await mngFact.WETH();
+                const path = [WETH, tokenAddr];
+                setPath(path);
+                const priceList = await uniSwap.getAmountsIn(
+                    ethers.utils.parseEther(buyToken),
+                    path,
+                    { gasLimit: BigNumber.from("900000") }
+                );
+                setCurPrice(priceList[0]);
+            }, 500);
+        }
+    }, [buyToken, location.pathname, provider]);
+
+    useEffect(() => {
+        if(!addr) {
+            getAddr();
+        }
+        if (!uniSwap && addr) {
+            getUniSwap();
+        }
+    }, [uniSwap, getUniSwap, addr, getAddr]);
+
+    return (
+      <LinkButton
+        onClick={async () => {
+          if (typeof uniSwap !== "undefined") {
+            await uniSwap.swapETHForExactTokens(
+              ethers.utils.parseEther(buyToken),
+              path,
+              addr,
+              ethers.constants.MaxUint256,
+              {
+                value: curPrice,
+                gasLimit: BigNumber.from("900000"),
+              }
+            );
+          }
+        }}
+      >
+        {!provider ? "Buy not ready" : "구매하기"}
+      </LinkButton>
+    );
+}
 
 const Profile = () => {
-    const [provider, loadWeb3Modal] = useWeb3Modal();
+    let location = useLocation();
     let { path, url } = useRouteMatch();
+    const [provider] = useWeb3Modal();
+    const [buyTokenPrice, setBuyTokenPrice] = useState(undefined);
+    const [tokenCount, setTokenCount] = useState(undefined);
+    const [ethBalance, setEthBalance] = useState(undefined);
+    const [tokenBalance, setTokenBalance] = useState(undefined);
+    const [buyToken, setBuyToken] = useState("1");
+    const [reqEth, setReqEth] = useState(undefined);
+    const [reqToken, setReqToken] = useState(undefined);
+    const [isAdmin, setIsAdmin] = useState(undefined);
+
+    const getBuyTokenPrice = useCallback(() => {
+        if (typeof provider !== "undefined") {
+            setTimeout(async () => {
+                const signer = provider.getSigner();
+                const mngFact = new Contract(
+                    addresses.MANAGER_FACTORY,
+                    abis.MANAGER_FACTORY_ABI,
+                    signer
+                );
+                const uniSwap = new Contract(
+                    "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D",
+                    abis.UNI_SWAP_ABI,
+                    signer
+                );
+                const managerAddr = (location.pathname.split('/'))[1];
+                const mng = new Contract(managerAddr, abis.MANAGER_ABI, signer);
+                const tokenAddr = await mng.token();
+                const WETH = await mngFact.WETH();
+                const path = [WETH, tokenAddr];
+                const priceList = await uniSwap.getAmountsIn(
+                    ethers.utils.parseEther(buyToken),
+                    path,
+                    { gasLimit: BigNumber.from("900000") }
+                );
+                setBuyTokenPrice(utils.formatEther(priceList[0].toString()).toString());
+            }, 500);
+        }
+    }, [buyToken, location.pathname, provider]);
+
+    const getTokenCount = useCallback(() => {
+        if (typeof provider !== "undefined") {
+            setTimeout(async () => {
+                const signer = provider.getSigner();
+                const managerAddr = (location.pathname.split('/'))[1];
+                const mng = new Contract(managerAddr, abis.MANAGER_ABI, signer);
+                const tokenAddr = await mng.token();
+                const token = new Contract(tokenAddr, abis.ERC20, signer);
+                const uniswapRouter = new Contract("0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D", abis.UNI_SWAP_ABI, signer);
+                const WETH = await uniswapRouter.WETH();
+                const uniswapFactory = new Contract("0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f", abis.UNISWAP_FACTORY_ABI, signer);
+                const lp = await uniswapFactory.getPair(tokenAddr, WETH);
+                const balance = await token.balanceOf(lp);
+                setTokenCount(utils.formatEther(balance.toString()).toString());
+            }, 500);
+        }
+    }, [location.pathname, provider]);
+
+    const getAdmin = useCallback(() => {
+        if (typeof provider !== "undefined") {
+            setTimeout(async () => {
+                const signer = provider.getSigner();
+                const addr = await signer.getAddress();
+                const managerAddr = (location.pathname.split('/'))[1];
+                const mng = new Contract(managerAddr, abis.MANAGER_ABI, signer);
+                const ownerAddr = await mng.owner();
+                addr === ownerAddr ? setIsAdmin(true) : setIsAdmin(false);
+            }, 500);
+        }
+    }, [location.pathname, provider]);
+
+    const getEthBalance = useCallback(() => {
+        if (typeof provider !== "undefined") {
+            setTimeout(async () => {
+                const signer = provider.getSigner();
+                const balance = await signer.getBalance();
+                setEthBalance(utils.formatEther(balance.toString()).toString());
+            }, 500);
+        }
+    }, [provider]);
+
+    const getTokenBalance = useCallback(() => {
+        if (typeof provider !== "undefined") {
+            setTimeout(async () => {
+                const signer = provider.getSigner();
+                const addr = await signer.getAddress();
+                const managerAddr = (location.pathname.split('/'))[1];
+                const mng = new Contract(managerAddr, abis.MANAGER_ABI, signer);
+                const tokenAddr = await mng.token();
+                const token = new Contract(tokenAddr, abis.ERC20, signer);
+                const balance = await token.balanceOf(addr);
+                setTokenBalance(utils.formatEther(balance.toString()).toString());
+            }, 500);
+        }
+    }, [location.pathname, provider]);
+
+    const getReqToken = useCallback(() => {
+        if (typeof provider !== "undefined") {
+            setTimeout(async () => {
+                const signer = provider.getSigner();
+                const managerAddr = (location.pathname.split('/'))[1];
+                const mng = new Contract(managerAddr, abis.MANAGER_ABI, signer);
+                const req = await mng.requireAmount();
+                setReqToken(utils.formatEther(req.toString()).toString());
+            }, 500);
+        }
+    }, [location.pathname, provider]);
+
+    useEffect(() => {
+        if (!buyTokenPrice) {
+            getBuyTokenPrice();
+        }
+        if (!tokenCount) {
+            getTokenCount();
+        }
+        if (!ethBalance) {
+            getEthBalance();
+        }
+        //@TODO: 토큰 수량 바뀔 때 필요한 ETH를 유니스왑에서 가져와야 함.
+        if (buyToken.length >= 1 && buyTokenPrice) {
+            const price = utils.parseEther(buyTokenPrice);
+            const p = BigNumber.from(buyToken).mul(price).toString();
+            setReqEth(utils.formatEther(p).toString());
+        }
+        if (typeof isAdmin === 'undefined') {
+            getAdmin();
+        }
+        if(!tokenBalance) {
+            getTokenBalance();
+        }
+        if(!reqToken) {
+            getReqToken();
+        }
+    }, [buyToken, ethBalance, getEthBalance, getTokenCount, getBuyTokenPrice, tokenCount, buyTokenPrice, isAdmin, getAdmin, tokenBalance, getTokenBalance, reqToken, getReqToken]);
 
     const activeStyle = {
         opacity: '1'
@@ -36,22 +544,31 @@ const Profile = () => {
                     <div className="container">
                         <div className="pic">
                             <ProfilePic>
-                                <img src={pic}></img>
+                                <img src={pic} alt="profile"/>
                             </ProfilePic>
                         </div>
                         <div className="info">
                             <h1>최윤성</h1>
-                            <legend><img src={work}/>DSRV Labs</legend>
-                            <legend><img src={pin}/>서울</legend>
+                            <legend><img src={work} alt="work icon"/>DSRV Labs</legend>
+                            <legend><img src={pin} alt="coordinate"/>서울</legend>
                             {/* <legend><img src={link}/>https://www.facebook.com/me/</legend> */}
                         </div>
                     </div>
                 </Jumbotron>
                 <RowContainer>
-                    <MiniNav>
-                        <NavLink activeStyle={activeStyle} to={`${url}`}>프로필</NavLink>
-                        <NavLink activeStyle={activeStyle} to={`${url}/requested`}>요청한 약속</NavLink>
-                    </MiniNav>
+                    {isAdmin === true ? (
+                        <MiniNav>
+                            <NavLink activeStyle={activeStyle} to={`${url}`}>프로필</NavLink>
+                            <NavLink activeStyle={activeStyle} to={`${url}/progressing`}>진행중인 약속</NavLink>
+                            <NavLink activeStyle={activeStyle} to={`${url}/request`}>요청된 약속</NavLink>
+                        </MiniNav>
+                    ) : (
+                        <MiniNav>
+                            <NavLink activeStyle={activeStyle} to={`${url}`}>프로필</NavLink>
+                            <NavLink activeStyle={activeStyle} to={`${url}/requested`}>요청한 약속</NavLink>
+                        </MiniNav>
+                    )}
+                    
                 </RowContainer>
 
                 <ColumnContainer>
@@ -61,75 +578,82 @@ const Profile = () => {
                                 <ProfilePic/>
                             </div>
                             <div className="info">
-                                <h4>WITH☕️</h4>
-                                <div className="legend">0x0...</div>
+                                <h4>WITH Coffee Sample</h4>
+                                <div className="legend">0x88bf...2864</div>
                             </div>
                         </div>
                         <div className="receipt">
                             <div className="expenses">
                                 <div className="label">현재 가격</div>
-                                <div className="detail">ETH</div>
+                                <div className="detail">{buyTokenPrice} ETH</div>
                             </div>
                             <div className="expenses">
                                 <div className="label">남은 개수</div>
-                                <div className="detail">개</div>
+                                <div className="detail">{tokenCount} 개</div>
                             </div>
                         </div>
                         
                     </TokenStates>
 
                     <TokenStates style={{marginTop: '90px'}}>
-                        <Tabs>
-                            <TabList>
-                                <Tab>구매</Tab>
-                                <Tab>판매</Tab>
-                                <Tab>약속하기</Tab>
-                            </TabList>
+                        {isAdmin === true ? (
+                            <div>
+                                지금 현재 주소를 공유하세요!
+                            </div>
+                        ): (
+                            <Tabs>
+                                <TabList>
+                                    <Tab>구매</Tab>
+                                    <Tab>판매</Tab>
+                                    <Tab>약속하기</Tab>
+                                </TabList>
 
-                            <TabPanel>
-                                <Field placeholder="구매할 토큰 수량" unit="WITH"></Field>
-                                <GreyBack>
-                                    <div className="receipt">
-                                        <div className="expenses">
-                                            <div className="label">보유 이더리움</div>
-                                            <div className="detail">ETH</div>
+                                <TabPanel>
+                                    <Field placeholder="구매할 토큰 수량" unit="WITH" value={buyToken} onUpdate={setBuyToken}></Field>
+                                    <GreyBack>
+                                        <div className="receipt">
+                                            <div className="expenses">
+                                                <div className="label">보유 이더리움</div>
+                                                <div className="detail">{ethBalance} ETH</div>
+                                            </div>
+                                            <div className="expenses">
+                                                <div className="label">구매 금액</div>
+                                                <div className="detail">{reqEth} ETH</div>
+                                            </div>
                                         </div>
-                                        <div className="expenses">
-                                            <div className="label">구매 금액</div>
-                                            <div className="detail">ETH</div>
+                                    </GreyBack>
+                                    <BuyToken provider={provider} buyToken={buyToken} location={location}>구매하기</BuyToken>
+                                </TabPanel>
+                                <TabPanel>
+                                    <Field placeholder="판매할 토큰 수량" unit="WITH"></Field>
+                                    <GreyBack>
+                                        <div className="receipt">
+                                            <div className="expenses">
+                                                <div className="label">판매 금액</div>
+                                                <div className="detail">ETH</div>
+                                            </div>
                                         </div>
-                                    </div>
-                                </GreyBack>
-                                <LinkButton>구매하기</LinkButton>
-                            </TabPanel>
-                            <TabPanel>
-                                <Field placeholder="판매할 토큰 수량" unit="WITH"></Field>
-                                <GreyBack>
-                                    <div className="receipt">
-                                        <div className="expenses">
-                                            <div className="label">판매 금액</div>
-                                            <div className="detail">ETH</div>
+                                    </GreyBack>
+                                    <LinkButton>판매하기</LinkButton>
+                                </TabPanel>
+                                <TabPanel>
+                                    <GreyBack>
+                                        <div className="receipt">
+                                            <div className="expenses">
+                                                <div className="label">보유 토큰 수량</div>
+                                                <div className="detail">{tokenBalance} WITH</div>
+                                            </div>
+                                            <div className="expenses">
+                                                <div className="label">필요 토큰 수량</div>
+                                                <div className="detail">{reqToken} WITH</div>
+                                            </div>
                                         </div>
-                                    </div>
-                                </GreyBack>
-                                <LinkButton>판매하기</LinkButton>
-                            </TabPanel>
-                            <TabPanel>
-                                <GreyBack>
-                                    <div className="receipt">
-                                        <div className="expenses">
-                                            <div className="label">보유 토큰 수량</div>
-                                            <div className="detail">WITH</div>
-                                        </div>
-                                        <div className="expenses">
-                                            <div className="label">필요 토큰 수량</div>
-                                            <div className="detail">WITH</div>
-                                        </div>
-                                    </div>
-                                </GreyBack>
-                                <LinkButton>약속하기</LinkButton>
-                            </TabPanel>
-                        </Tabs>
+                                    </GreyBack>
+                                    <Reservation provider={provider} location={location}>약속하기</Reservation>
+                                </TabPanel>
+                            </Tabs>
+                        )}
+                        
                     </TokenStates>
                 </ColumnContainer>
 
@@ -137,9 +661,9 @@ const Profile = () => {
                     <Route exact path={path}>
                         <Desc />
                     </Route>
-                    <Route path={`${path}/:cate`}>
-                        <Requested />
-                    </Route>
+                    <Route exact path={`${path}/progressing`} component={Progressing}></Route>
+                    <Route exact path={`${path}/Request`} component={Request}></Route>
+                    <Route exact path={`${path}/requested`} component={Requested}></Route>
                 </Switch>
             </Body>
         </>
@@ -166,14 +690,40 @@ function Desc() {
         </ProfileBody>
     );
 }
+function Progressing() {
+    const [provider] = useWeb3Modal();
+
+    return (
+        <ProfileBody>
+            <div className="container">
+                <div className="addr">
+                0x2e6bE9855A3bF02C73Ba74B7d756a63DB7762238 와 약속 진행중
+                </div>
+                <Finalize provider={provider}></Finalize>
+            </div>
+        </ProfileBody>
+    );
+}
+
+function Request() {
+    const [provider] = useWeb3Modal();
+
+    return (
+        <ProfileBody>
+            <div className="container">
+                <div className="addr">
+                0x2e6bE9855A3bF02C73Ba74B7d756a63DB7762238 의 요청
+                </div>
+                <div className="buttons">
+                    <Confirm provider={provider}></Confirm>
+                    <LinkButton style={{color: "#212736", background: "#F3F3F3", borderRadius: "199px"}}>거절</LinkButton>
+                </div>
+            </div>
+        </ProfileBody>
+    );
+}
 
 function Requested() {
-    // The <Route> that rendered this component has a
-    // path of `/topics/:topicId`. The `:topicId` portion
-    // of the URL indicates a placeholder that we can
-    // get from `useParams()`.
-    let { cate } = useParams();
-
     return (
         <ProfileBody>
             <div className="container">
@@ -181,23 +731,6 @@ function Requested() {
             </div>
         </ProfileBody>
     );
-}
-
-const Field = ({placeholder, unit}) => {
-
-    return (
-        <>
-        <InputContainer>
-            <input placeholder={placeholder}/>
-            {unit !== "" ? <div>{unit}</div> : null }
-        </InputContainer>
-        </>
-    );
-}
-
-Field.propTypes = {
-    placeholder: Proptypes.string,
-    unit: Proptypes.string
 }
 
 export default Profile;
